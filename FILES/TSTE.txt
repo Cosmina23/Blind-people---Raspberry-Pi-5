@@ -1,0 +1,92 @@
+import asyncio
+import websockets
+import json
+from textToSpeech import speak_text
+from voiceToText import recognize_speech
+
+current_app = None
+async def handle_connection(websocket, path=None):
+    global current_app
+    
+    if current_app:
+        await current_app.close()
+        print("Conexiune curată / Aplicație anterioară deconectată")
+
+    current_app = websocket
+    print("Conexiune nouă stabilită")
+
+    try:
+        # 1. Text to Speech: "Buna, te rog sa imi spui numele de utilizator"
+        speak_text("Buna, te rog sa imi spui numele de utilizator")
+        
+        # 2. Speech to Text: preia numele
+        name = await recognize_speech()
+        print(f"Nume preluat: {name}")
+
+        if not name:
+            print("Numele nu a fost recunoscut corect")
+            await send_message("Eroare: Nu am recunoscut numele.")
+            return
+
+        # 3. Trimite Nume către aplicație
+        await send_message(f'Nume: "{name}"')
+
+        # 4. Text to Speech: "Te rog sa imi spui codul pentru autentificare format doar din cifre"
+        speak_text("Te rog sa imi spui codul pentru autentificare format doar din cifre")
+        
+        # 5. Speech to Text: preia codul
+        code = await recognize_speech()
+        print(f"Cod preluat: {code}")
+
+        if not code:
+            print("Codul nu a fost recunoscut corect")
+            await send_message("Eroare: Nu am recunoscut codul.")
+            return
+
+        # 6. Trimite Cod către aplicație
+        await send_message(f'Cod: "{code}"')
+
+        # 7. Text to Speech: "Te rog sa astepti cateva secunde"
+        speak_text("Te rog sa astepti cateva secunde")
+
+        # 8. Așteaptă să primim un mesaj de confirmare din aplicație
+        response = await receive_message_from_app()
+
+        # 9. Trimitem confirmările finale la aplicație
+        await send_message(f"Nume: {name}")
+        await send_message(f"Cod: {code}")
+        
+    except websockets.exceptions.ConnectionClosed as e:
+        print(f"Conexiune închisă din cauza unei erori: {e}")
+    except Exception as e:
+        print(f"A apărut o eroare necunoscută: {e}")
+    finally:
+        current_app = None
+
+
+async def receive_message_from_app():
+    """Așteaptă un mesaj de la aplicație după ce s-au trimis numele și codul"""
+    if current_app:
+        message = await current_app.recv()
+        print(f"Mesaj primit de la aplicație: {message}")
+        return message
+
+async def send_message(message):
+    if current_app:
+        await current_app.send(json.dumps({"message": message}))
+        print(f"Trimis la aplicație: {message}")
+    else:
+        print("Nicio aplicație conectată")
+
+async def start_websocket_server():
+    # Pornește serverul WebSocket pe portul 8765
+    server = await websockets.serve(handle_connection, "0.0.0.0", 8765)
+    print("Server WebSocket pornit pe portul 8765")
+    await server.wait_closed()
+
+async def main():
+    print("Serverul WebSocket pornește...")
+    await start_websocket_server()
+
+if __name__ == "__main__":
+    asyncio.run(main())
