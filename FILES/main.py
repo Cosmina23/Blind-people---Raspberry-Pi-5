@@ -18,5 +18,7 @@ async def main():
     finally:
         print("Aplicația s-a închis.")
 
+print("Serverul Websocket 2...")
+
 if __name__ == "__main__":
     asyncio.run(main())

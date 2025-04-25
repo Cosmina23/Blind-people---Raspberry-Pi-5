@@ -5,6 +5,45 @@ from textToSpeech import speak_text
 from voiceToText import recognize_speech
 
 current_app = None
+
+async def autentificare():
+    speak_text("Buna, ai deja cont?")
+    cont = await recognize_speech()
+    print(f"Ai cont? : {cont}")
+    if not cont :
+        print("Nu s-a inteles raspunsul")
+        await send_message("Eroare: nu am inteles raspunsul")
+        return
+    await send_message(f'Cont existent: {cont}')
+
+    speak_text("te rog sa imi spui numele de utilizator")
+    name = await recognize_speech()
+    print(f"Nume preluat: {name}")
+    if not name:
+        print("Numele nu a fost recunoscut corect")
+        await send_message("Eroare: Nu am recunoscut numele.")
+        return
+    await send_message(f'Nume: "{name}"')
+
+    speak_text("Te rog sa imi spui codul pentru autentificare format doar din cifre")
+    code = await recognize_speech()
+    print(f"Cod preluat: {code}")
+    if not code:
+        print("Codul nu a fost recunoscut corect")
+        await send_message("Eroare: Nu am recunoscut codul.")
+        return
+    await send_message(f'Cod: "{code}"')
+
+    speak_text(f"Vrei sa te conectezi cu numele {name}?")
+    conectare_ok = await recognize_speech()
+    print(f'Credentiale bune = {conectare_ok}')
+    if conectare_ok.lower() =="da" :
+        await send_message(f'Credentiale bune: {conectare_ok}')
+        speak_text("Te rog sa astepti cateva secunde")
+        response = await receive_message_from_app()
+    else:
+        speak_text("Reintroduce credentialele de conectare")
+
 async def handle_connection(websocket, path=None):
     global current_app
     
@@ -16,44 +55,23 @@ async def handle_connection(websocket, path=None):
     print("Conexiune nouă stabilită")
 
     try:
-        speak_text("Buna, ai deja cont?")
-        cont = await recognize_speech()
-        print(f"Ai cont? : {cont}")
-        if not cont :
-            print("Nu s-a inteles raspunsul")
-            await send_message("Eroare: nu am inteles raspunsul")
-            return
-        await send_message(f'Cont existent: {cont}')
+        print("Aștept comenzile utilizatorului...")
+        await autentificare()
 
-        speak_text("te rog sa imi spui numele de utilizator")
-        name = await recognize_speech()
-        print(f"Nume preluat: {name}")
-        if not name:
-            print("Numele nu a fost recunoscut corect")
-            await send_message("Eroare: Nu am recunoscut numele.")
-            return
-        await send_message(f'Nume: "{name}"')
+        while True:
+            message = await websocket.recv()
+            print(f"Mesaj primit: {message}")
 
-        speak_text("Te rog sa imi spui codul pentru autentificare format doar din cifre")
-        code = await recognize_speech()
-        print(f"Cod preluat: {code}")
-        if not code:
-            print("Codul nu a fost recunoscut corect")
-            await send_message("Eroare: Nu am recunoscut codul.")
-            return
-        await send_message(f'Cod: "{code}"')
-
-        speak_text(f"Vrei sa te conectezi cu numele {name}?")
-        conectare_ok = await recognize_speech()
-        print(f'Credentiale bune = {conectare_ok}')
-        if conectare_ok.lower() =="da" :
-            await send_message(f'Credentiale bune: {conectare_ok}')
-            speak_text("Te rog sa astepti cateva secunde")
-            response = await receive_message_from_app()
-        else:
-            speak_text("Reintroduce credentialele de conectare")
-        
-        
+            try:
+                data = json.loads(message)
+                if data.get("message") == "logout" or data.get("message") == "user logout":
+                    speak_text("Utilizatorul s-a deconectat")
+                    print("Utilizatorul s-a deconectat")
+                    break
+                else:
+                    print(f"Mesaj necunoscut: {data}")
+            except json.JSONDecodeError:
+                print(f"Mesaj invalid: {message}")
     except websockets.exceptions.ConnectionClosed as e:
         print(f"Conexiune închisă din cauza unei erori: {e}")
     except Exception as e:
@@ -76,13 +94,14 @@ async def send_message(message):
         print("Nicio aplicație conectată")
 
 async def start_websocket_server():
+    print("Începem serverul WebSocket...")
     server = await websockets.serve(handle_connection, "0.0.0.0", 8765)
     print("Server WebSocket pornit pe portul 8765")
-    await server.wait_closed()
 
-async def main():
-    print("Serverul WebSocket pornește...")
-    await start_websocket_server()
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        # Ține serverul activ la nesfârșit
+        await asyncio.Future()
+    except asyncio.CancelledError:
+        print("Serverul WebSocket a fost anulat.")
+        server.close()
+        await server.wait_closed()

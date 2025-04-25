@@ -50,8 +50,13 @@ def salveaza_harta(graf, ruta):
 
 
 def obtine_ruta(start, end):
-    timisoara_g = ox.graph_from_place("Timișoara, Romania", network_type = "walk")
-    print("Download Timisoara maps")
+    print("⏳ Se descarcă harta Timișoara de pe OpenStreetMap...")
+    #la prima rulare , decomenteazxa linia pentru a se descaer
+    #timisoara_g = ox.graph_from_place("Timișoara, Romania", network_type = "walk")
+    print("✅ Harta a fost descărcată cu succes.")
+
+    #ox.save_graphml(timisoara_g, "timisoara.graphml")
+    timisoara_g = ox.load_graphml("timisoara.graphml")
 
     start_node = nearest_node(timisoara_g, start)
     end_node = nearest_node(timisoara_g,end)
