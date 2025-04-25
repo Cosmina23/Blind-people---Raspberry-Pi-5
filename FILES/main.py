@@ -1,5 +1,5 @@
 import asyncio
-from sendMessage import start_websocket_server, send_message
+from webSocketServer import start_websocket_server
 
 async def main():
     print("Serverul Websocket porneste...")
@@ -17,8 +17,6 @@ async def main():
         print("Serverul WebSocket a fost întrerupt de utilizator.")
     finally:
         print("Aplicația s-a închis.")
-
-print("Serverul Websocket 2...")
 
 if __name__ == "__main__":
     asyncio.run(main())
