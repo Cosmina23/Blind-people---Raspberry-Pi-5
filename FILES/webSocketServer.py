@@ -2,9 +2,10 @@ import websockets
 import json
 import asyncio
 from src.takeCredentials import autentificare, reset_credentials
+from src.navigator_maps import obtine_ruta
 
 current_app = None
-
+last_location = None
 
 async def handle_connection(websocket, path=None):
     global current_app
@@ -29,8 +30,24 @@ async def handle_connection(websocket, path=None):
                     print("Utilizatorul s-a deconectat")
                     reset_credentials()
                     break
-                else:
-                    print(f"Mesaj necunoscut: {data}")
+
+                msg_type = data.get("type")
+
+                if msg_type == "location" :
+                    last_location = (data.get("lat"), data.get("lng"))
+                    print(f"Ultima locatie actualizata: {last_location}")
+                elif msg_type == "searchedLocation":
+                    if last_location:
+                        start = last_location
+                        end = (data.get("lat"), data.get("lng"))
+                        print(f"Calculam ruta de la start la finish")
+
+                        indicatii = obtine_ruta(start,end)
+
+                        for indicatie in indicatii : 
+                            await websocket.send(json.dumps({"message_indicatie: ": indicatie}))
+
+                else: print(f"Mesaj necunoscut: {data}")
             except json.JSONDecodeError:
                 print(f"Mesaj invalid: {message}")
     except websockets.exceptions.ConnectionClosed as e:
