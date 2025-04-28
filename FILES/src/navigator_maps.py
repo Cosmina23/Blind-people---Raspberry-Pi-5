@@ -86,14 +86,15 @@ def obtine_ruta(start, end):
         #reda indicatia
         #redare audio
 
+    coordonate_ruta = [(timisoara_g.nodes[n]['y'], timisoara_g.nodes[n]['x']) for n in ruta]
     salveaza_harta(timisoara_g, ruta)
-    return indicatii
+    return indicatii, coordonate_ruta
 
-start = (45.72787, 21.23604) #Kaufland martirilor
-end = (45.73559, 21.25672) #altex stand vidrighin
-indicatii = obtine_ruta(start,end)
-for indicatie in indicatii:
-    print(indicatie)
+# start = (45.72787, 21.23604) #Kaufland martirilor
+# end = (45.73559, 21.25672) #altex stand vidrighin
+# indicatii = obtine_ruta(start,end)
+# for indicatie in indicatii:
+#     print(indicatie)
 
 #pentru a apela din main, comenteaza liniile 87-91 si decomenteaza 94-97
 # def calcul_traseu(start,end):

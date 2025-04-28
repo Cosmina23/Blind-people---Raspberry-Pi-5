@@ -1,3 +1,4 @@
+
 import websockets
 import json
 import asyncio
@@ -9,6 +10,7 @@ last_location = None
 
 async def handle_connection(websocket, path=None):
     global current_app
+    global last_location
     if current_app:
         await current_app.close()
         print("Conexiune curată / Aplicație anterioară deconectată")
@@ -42,10 +44,22 @@ async def handle_connection(websocket, path=None):
                         end = (data.get("lat"), data.get("lng"))
                         print(f"Calculam ruta de la start la finish")
 
-                        indicatii = obtine_ruta(start,end)
+                        indicatii, coordonate_ruta = obtine_ruta(start,end)
 
-                        for indicatie in indicatii : 
-                            await websocket.send(json.dumps({"message_indicatie: ": indicatie}))
+                        # for indicatie in indicatii : 
+                        #     await websocket.send(json.dumps({"message_indicatie: ": indicatie}))
+
+                        with open("indicaii_ruta.txt", "w") as f :
+                            for indicatie in indicatii : 
+                                f.write(indicatie+"\n")
+                        print(f"Indicatii salvate in fisierul: indicaii_ruta.txt")
+
+                        await websocket.send(json.dumps({
+                            "type" : "ruta",
+                            "coordonate" : [{"latitude": lat, "longitude": lng} for lat, lng in coordonate_ruta]
+                        }))
+
+                        print(f"S-au trimis coordonatele la aplicatie")
 
                 else: print(f"Mesaj necunoscut: {data}")
             except json.JSONDecodeError:
@@ -70,4 +84,5 @@ async def start_websocket_server():
         print("Serverul WebSocket a fost anulat.")
         server.close()
         await server.wait_closed()
+
 
