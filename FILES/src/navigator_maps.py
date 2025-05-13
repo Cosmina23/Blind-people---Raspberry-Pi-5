@@ -5,6 +5,7 @@ from gtts import gTTS
 import os 
 import math 
 import folium
+import json
 
 import openrouteservice
 
@@ -101,6 +102,7 @@ def obtine_ruta_ors(start, end, api_key):
             coordinates=coords,
             profile='foot-walking',
             format='geojson',
+            language = 'ro',
             instructions=True
         )
 
@@ -109,16 +111,25 @@ def obtine_ruta_ors(start, end, api_key):
 
         steps = result['features'][0]['properties']['segments'][0]['steps']
         geometry = result['features'][0]['geometry']['coordinates']
+        duration_sec = result['features'][0]['properties']['segments'][0]['duration']
+        duration_min = int(duration_sec // 60)
+
 
         for step in steps:
             dist = step['distance']
             instructiune = step['instruction']
-            indicatii.append(f"{instructiune} ({dist:.0f} m)")
 
-        # Convertim coordonate (lon, lat) în (lat, lon)
+            if "Direcția {" in instructiune or "direction {" in instructiune:
+                continue
+            
+            instructiune_formatata = f"{instructiune}. Dupa care mergeti: {dist:.0f} metri."
+
+            indicatii.append(instructiune_formatata)
+
+        # Convertim coordonate (lon, lat) in (lat, lon)
         coordonate_ruta = [(lat, lon) for lon, lat in geometry]
 
-        return indicatii, coordonate_ruta
+        return indicatii, coordonate_ruta, duration_min
 
     except Exception as e:
         print("Eroare ORS:", e)
