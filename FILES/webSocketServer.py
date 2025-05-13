@@ -3,10 +3,12 @@ import websockets
 import json
 import asyncio
 from src.takeCredentials import autentificare, reset_credentials
-from src.navigator_maps import obtine_ruta
+from src.navigator_maps import obtine_ruta_ors
 
 current_app = None
 last_location = None
+
+ORS_API_KEY = "5b3ce3597851110001cf62483ed29d9e4b9b47a58f40e20891efb908"
 
 async def handle_connection(websocket, path=None):
     global current_app
@@ -44,7 +46,7 @@ async def handle_connection(websocket, path=None):
                         end = (data.get("lat"), data.get("lng"))
                         print(f"Calculam ruta de la start la finish")
 
-                        indicatii, coordonate_ruta = obtine_ruta(start,end)
+                        indicatii, coordonate_ruta = obtine_ruta_ors(start,end, ORS_API_KEY)
 
                         # for indicatie in indicatii : 
                         #     await websocket.send(json.dumps({"message_indicatie: ": indicatie}))

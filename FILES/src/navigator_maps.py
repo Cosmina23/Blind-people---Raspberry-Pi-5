@@ -6,6 +6,8 @@ import os
 import math 
 import folium
 
+import openrouteservice
+
 def calculeaza_unghi(p1,p2,p3):
     #vectorii ce formeaza unghiul
     v1 = (p2[0] - p1[0], p2[1] - p1[1])
@@ -50,10 +52,10 @@ def salveaza_harta(graf, ruta):
 
 
 def obtine_ruta(start, end):
-    print("⏳ Se descarcă harta Timișoara de pe OpenStreetMap...")
+    print("Se descarcă harta Timișoara de pe OpenStreetMap...")
     #la prima rulare , decomenteazxa linia pentru a se descaer
     #timisoara_g = ox.graph_from_place("Timișoara, Romania", network_type = "walk")
-    print("✅ Harta a fost descărcată cu succes.")
+    print(" Harta a fost descărcată cu succes.")
 
     #ox.save_graphml(timisoara_g, "timisoara.graphml")
     timisoara_g = ox.load_graphml("timisoara.graphml")
@@ -89,6 +91,38 @@ def obtine_ruta(start, end):
     coordonate_ruta = [(timisoara_g.nodes[n]['y'], timisoara_g.nodes[n]['x']) for n in ruta]
     salveaza_harta(timisoara_g, ruta)
     return indicatii, coordonate_ruta
+
+def obtine_ruta_ors(start, end, api_key):
+    client = openrouteservice.Client(key=api_key)
+    coords = [(start[1], start[0]), (end[1], end[0])]  # ORS vrea (lon, lat)
+
+    try:
+        result = client.directions(
+            coordinates=coords,
+            profile='foot-walking',
+            format='geojson',
+            instructions=True
+        )
+
+        indicatii = []
+        coordonate_ruta = []
+
+        steps = result['features'][0]['properties']['segments'][0]['steps']
+        geometry = result['features'][0]['geometry']['coordinates']
+
+        for step in steps:
+            dist = step['distance']
+            instructiune = step['instruction']
+            indicatii.append(f"{instructiune} ({dist:.0f} m)")
+
+        # Convertim coordonate (lon, lat) în (lat, lon)
+        coordonate_ruta = [(lat, lon) for lon, lat in geometry]
+
+        return indicatii, coordonate_ruta
+
+    except Exception as e:
+        print("Eroare ORS:", e)
+        return [], []
 
 # start = (45.72787, 21.23604) #Kaufland martirilor
 # end = (45.73559, 21.25672) #altex stand vidrighin

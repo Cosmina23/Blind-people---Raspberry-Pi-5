@@ -12,7 +12,17 @@ async def get_input(text):
         speak_text("Nu am inteles, te rog repeta")
 
 async def autentificare(websocket):
-    cont = await get_input("Buna, ai deja cont?")
+    speak_text("Buna! Vrei sa te conectezi vocal sau manual?")
+    metoda = await recognize_speech()
+
+    if any(cuv in metoda.lower() for cuv in ["manual", "scris", "vreau manual", "nu vreau vocal"]):
+        speak_text("Am inteles, autentificarea se va face manual")
+        await send_message(websocket, "autentiicare manuala")
+        return
+    else: 
+        speak_text("Conectarea o sa fie vocala")
+
+    cont = await get_input("Ai deja cont?")
     await send_message(websocket, f'Cont existent: {cont}')
 
     user_name = await get_input("Te rog sa imi spui numele de utilizator")
