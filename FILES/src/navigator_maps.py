@@ -59,7 +59,11 @@ def obtine_ruta(start, end):
     print(" Harta a fost descărcată cu succes.")
 
     #ox.save_graphml(timisoara_g, "timisoara.graphml")
-    timisoara_g = ox.load_graphml("timisoara.graphml")
+    if not os.path.exists("timisoara.graphml"):
+        timisoara_g = ox.graph_from_place("Timișoara, Romania", network_type = "walk")
+        ox.save_graphml(timisoara_g, "timisoara.graphml")
+    else:
+        timisoara_g = ox.load_graphml("timisoara.graphml")
 
     start_node = nearest_node(timisoara_g, start)
     end_node = nearest_node(timisoara_g,end)
@@ -88,10 +92,18 @@ def obtine_ruta(start, end):
         #print(mesaj)
         #reda indicatia
         #redare audio
+    total_distance = sum(
+        geodesic(
+            (timisoara_g.nodes[ruta[i]]['y'], timisoara_g.nodes[ruta[i]]['x']),
+            (timisoara_g.nodes[ruta[i+1]]['y'], timisoara_g.nodes[ruta[i+1]]['x'])
+        ).meters
+        for i in range(len(ruta)-1)
+    )
+    duration_min = int(total_distance / (5000/60)) #5km/ora
 
     coordonate_ruta = [(timisoara_g.nodes[n]['y'], timisoara_g.nodes[n]['x']) for n in ruta]
     salveaza_harta(timisoara_g, ruta)
-    return indicatii, coordonate_ruta
+    return indicatii, coordonate_ruta, duration_min
 
 def obtine_ruta_ors(start, end, api_key):
     client = openrouteservice.Client(key=api_key)

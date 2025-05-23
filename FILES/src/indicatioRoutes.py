@@ -2,8 +2,27 @@ import asyncio
 import json
 from textToSpeech import speak_text
 from geopy.distance import geodesic as GD
+from geopy.geocoders import Nominatim
 
 PROXIMITY_METERS = 15
+geolocator = Nominatim(user_agent= "asistent_navigatie")
+
+async def geocode_adresa(adresa):
+    try:
+
+        if "timișoara" not in adresa.lower():
+            adresa += ", Timișoara"
+            
+        locatie = geolocator.geocode(adresa)
+        if locatie:
+            print(f'[GEOCODARE]: {adresa} => {locatie.latitude}, {locatie.longitude}')
+            return (locatie.latitude, locatie.longitude)
+        else:
+            print(f'[GEOCODARE]: Nu am gasit locatia pentru: {adresa}')
+            return None
+    except Exception as e:
+        print(f'[GEOCODARE]: Eroare: {e}')
+        return None
 
 def calculate_distance(lat_s, lng_s, lat_e, lng_e):
     return GD((lat_s, lng_s), (lat_e, lng_e)).km
@@ -41,6 +60,12 @@ async def comenzi_deplasare(location_queue):
                 print(f"[Asistent] Instrucțiune: {instructiune}")
                 speak_text(mesaj)
                 pas_curent += 1
+
+            if pas_curent == len(coordonate):
+                #s-a ajuns la destinatie 
+                await asyncio.sleep(1)
+                speak_text("Ați ajuns la destinație.")
+                break
 
         except Exception as e:
             print(f"[Asistent] Eroare la procesarea instrucțiunilor: {e}")
